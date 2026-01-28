@@ -1,0 +1,8 @@
+{
+  "tokenizer": "all-corpora",
+  "vector_size": 100,
+  "window": 8,
+  "min_count": 2,
+  "epochs": 30,
+  "vocab_size": 31797
+}

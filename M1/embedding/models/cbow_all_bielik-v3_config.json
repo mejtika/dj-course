@@ -1,0 +1,8 @@
+{
+  "tokenizer": "bielik-v3",
+  "vector_size": 100,
+  "window": 5,
+  "min_count": 2,
+  "epochs": 30,
+  "vocab_size": 30173
+}
