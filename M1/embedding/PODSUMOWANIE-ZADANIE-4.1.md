@@ -110,6 +110,7 @@ python cbow-train.py --corpus ALL --tokenizer all-corpora --vector-size 200 --ep
 ---
 
 ### `window` - Rozmiar okna kontekstowego
+![img.png](img.png)
 
 **Co to jest?**
 Ile słów po lewej i prawej stronie słowa docelowego model bierze pod uwagę jako kontekst.
