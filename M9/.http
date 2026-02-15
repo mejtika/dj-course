@@ -1,0 +1,92 @@
+@host = http://localhost:3000
+@id = 10
+
+### Get all products
+GET {{host}}/products
+Content-Type: application/json
+
+###
+
+### Get product by ID
+GET {{host}}/products/{{id}}
+Content-Type: application/json
+
+###
+
+### Add a new product (remember SKU has to be unique)
+POST {{host}}/products
+Content-Type: application/json
+
+{
+  "name": "Test Product",
+  "price": 19.99,
+  "description": "Test Description",
+  "stock": 100,
+  "category_id": 1,
+  "sku": "TEST-12345678904",
+  "weight_g": 100,
+  "is_active": true
+}
+
+###
+
+### Delete a product by ID
+DELETE {{host}}/products/{{id}}
+Content-Type: application/json
+
+###
+
+### Top products by category (optional: ?limit=50)
+GET {{host}}/top/products-by-category/10
+Content-Type: application/json
+
+###
+
+### Top customers by total spent (optional: ?limit=50)
+GET {{host}}/top/customers-by-total-spent
+Content-Type: application/json
+
+###
+
+### Delivered orders (last 30 days, FedEx, products above avg price)
+GET {{host}}/orders/delivered
+Content-Type: application/json
+
+###
+
+### Health check
+GET {{host}}/health
+Content-Type: application/json
+
+###
+
+### Sample error endpoint (manual span with error recording)
+GET {{host}}/error
+Content-Type: application/json
+
+###
+
+### Inject a memory leak
+GET {{host}}/inject-leak
+Content-Type: application/json
+
+###
+
+### Inject a random error (400, 401, 403, 404, 500, 503)
+GET {{host}}/inject-error
+Content-Type: application/json
+
+###
+
+### Client metrics (Web Vitals: LCP, INP, CLS)
+POST {{host}}/client_metrics
+Content-Type: application/json
+
+{
+  "name": "LCP",
+  "value": 2500,
+  "page_path": "/products",
+  "device_type": "desktop",
+  "connection_type": "4g"
+}
+

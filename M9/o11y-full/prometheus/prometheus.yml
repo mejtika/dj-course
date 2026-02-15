@@ -1,0 +1,39 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/rules/alerts.yml
+
+scrape_configs:
+  - job_name: 'prometheus'
+    # Monitorowanie samego Prometheusa
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # NOTE: products-api doesn't expose /metrics endpoint
+  # It sends metrics via OTLP to otel-collector
+  # which exposes them on port 8890 (scraped by otel-metrics-agent job below)
+
+  # - job_name: 'postgres-exporter'
+  #   static_configs:
+  #     - targets: ['postgres-exporter:9187']
+
+  - job_name: 'otel-metrics-agent'
+    # Application/infrastructure metrics (products-api, postgres-exporter)
+    # scrape all metrics from otel-collector
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['otel-collector:8890']
+      
+  - job_name: 'otel-collector-internal'
+    # Diagnostic metrics (collector state, errors, processing times)
+    # scrape diagnostic metrics on a separate port
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['otel-collector:8889']
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
