@@ -55,11 +55,11 @@ Do wyboru (wedle uznania):
 "Do-trenuj" sieć, rozwiązującą problem klasyfikacji binarnej.
   - **OPIS SIECI**: Sieć ma na celu rozwiązanie problemu ***klasyfikacji binarnej***, polegającego na określeniu, czy dany dwuwymiarowy punkt $(x, y)$ leży wewnątrz okręgu o promieniu $0.5$ (etykieta 1) czy poza nim (etykieta 0), gdy punkt znajduje się w kwadracie $[-1, 1] \times [-1, 1]$.
 
-Kod jest praktycznie gotowy, ale sieć ma niewłaściwie ustawioną strukturę (sieci - warstwy/neurony) i/lub parametry treningu.
+Kod jest praktycznie gotowy, ale sieć ma niewłaściwie ustawioną strukturę (sieci - warstwy/neurony) i/lub parametry treningu. Obecnie wszystko jest celowo zanizone.
 
 🔥 **Twoje zadanie** 🔥: przestrukturyzować sieć i/lub przeparametryzować trening.
 
-🔥 **Cel** 🔥: accuracy 100% przy małym rozmiarze (sieci i treningu).
+🔥 **Cel** 🔥: accuracy 100% przy małym rozmiarze (sieci i treningu). 
 
 Pomoce:
 - **TensorBoard**:

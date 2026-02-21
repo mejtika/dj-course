@@ -19,12 +19,14 @@ writer = SummaryWriter(LOG_DIR)
 class CircleInSquareNet(nn.Module):
     def __init__(self):
         super(CircleInSquareNet, self).__init__()
-        self.fc1 = nn.Linear(2, 2)
-        self.fc2 = nn.Linear(2, 1)
+        self.fc1 = nn.Linear(2, 16)   # 2 wejścia → 16 neuronów
+        self.fc2 = nn.Linear(16, 8)   # 16 → 8 neuronów
+        self.fc3 = nn.Linear(8, 1)    # 8 → 1 wyjście
 
     def forward(self, x):
         x = nn.ReLU()(self.fc1(x))
-        x = self.fc2(x)
+        x = nn.ReLU()(self.fc2(x))
+        x = self.fc3(x)
         return x
 
 np.random.seed(42)
@@ -47,7 +49,7 @@ def generate_circle_data(num_samples, radius=0.5):
     return X, Y
 
 # Generowanie danych
-NUM_SAMPLES = 10 # 🔥🔥🔥 PRACUJESZ TUTAJ
+NUM_SAMPLES = 1000 # 🔥🔥🔥 PRACUJESZ TUTAJ
 X_circle, Y_circle = generate_circle_data(NUM_SAMPLES)
 
 # Inicjalizacja:
@@ -57,8 +59,8 @@ model2 = CircleInSquareNet()
 # model z sekcji 1
 
 # Krok 1: Definicja Parametrów
-LEARNING_RATE = 0.00001 # 🔥🔥🔥 PRACUJESZ TUTAJ
-EPOCHS = 500 # 🔥🔥🔥 PRACUJESZ TUTAJ
+LEARNING_RATE = 0.01 # 🔥🔥🔥 PRACUJESZ TUTAJ
+EPOCHS = 2000 # 🔥🔥🔥 PRACUJESZ TUTAJ
 STEP = 100
 
 # Krok 2: Zmiana Optymalizatora i Funkcji Straty
