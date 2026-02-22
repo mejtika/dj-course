@@ -21,10 +21,21 @@
 * `LLAMA_GPU_LAYERS` - liczba warstw GPU (opcjonalne)
 * `LLAMA_CONTEXT_SIZE` - rozmiar kontekstu (opcjonalne)
 
+**Dla Ollama (ENGINE=OLLAMA):**
+* `ENGINE=OLLAMA`
+* `OLLAMA_MODEL_NAME` - nazwa modelu (np. "qwen2.5:7b-instruct", "llama3.1", "mistral")
+* `OLLAMA_HOST` - adres serwera Ollama (domyślnie: "http://localhost:11434")
+
+**Dla Anthropic (ENGINE=ANTHROPIC):**
+* `ENGINE=ANTHROPIC`
+* `ANTHROPIC_API_KEY` - klucz API Anthropic
+* `ANTHROPIC_MODEL_NAME` - nazwa modelu (np. "claude-haiku-4-5-20251001")
+* `ANTHROPIC_MAX_TOKENS` - maksymalna liczba tokenów odpowiedzi (domyślnie: 4096)
+
 ***
 
 ### 🧱 Ogólna Architektura Aplikacji
-* **Klient LLM**: Inicjalizowany na podstawie zmiennej `ENGINE` - obsługuje zarówno Gemini jak i Llama.
+* **Klient LLM**: Inicjalizowany na podstawie zmiennej `ENGINE` - obsługuje Gemini, Llama, Ollama i Anthropic.
 * **Sesja (ChatSession)**: Obiekt zarządzający bieżącą konwersacją i jej historią (`conversation_history`).
 * **Inicjalizacja**: Sprawdza konfigurację silnika, wyświetla ASCII Art, parsuje opcjonalne `--session-id` z CLI, wczytuje historię lub tworzy nową sesję.
 * **Pętla Główna**: Czeka na wejście użytkownika, rozróżnia komendy od wiadomości do modelu.
@@ -37,6 +48,8 @@
 * **Wymagania Konfiguracyjne**: 
   - Dla `ENGINE=GEMINI`: wymagana zmienna `GEMINI_API_KEY`
   - Dla `ENGINE=LLAMA_CPP`: wymagana zmienna `LLAMA_MODEL_PATH`
+  - Dla `ENGINE=OLLAMA`: wymagana zmienna `OLLAMA_MODEL_NAME` (serwer Ollama musi być uruchomiony)
+  - Dla `ENGINE=ANTHROPIC`: wymagana zmienna `ANTHROPIC_API_KEY`
 * **Walidacja Inputu**: Jeśli input zaczyna się od `/`, musi to być jedna z predefiniowanych komend slash, w przeciwnym razie jest odrzucany z błędem.
 * **Zapis Historii Sesji**: Sesja jest zapisywana do pliku `.json` **tylko wtedy**, gdy zawiera co najmniej dwie wiadomości (`len(history) >= 2`), tj. jedną pełną turę (User + Model).
 * **Automatyczny Zapis Końcowy**: Funkcja zarejestrowana przez `atexit` zapewnia finalny zapis sesji i wyświetla instrukcję jej wznowienia.

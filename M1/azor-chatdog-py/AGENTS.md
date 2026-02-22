@@ -2,7 +2,7 @@
 
 ## 🚀 Project Overview
 
-Azor the chatdog is a command-line interface chat application that provides an interactive, persistent chat experience with configurable language models. It supports both cloud-based models (Google Gemini) and local LLaMA models, offering a unified interface for interacting with AI assistants.
+Azor the chatdog is a command-line interface chat application that provides an interactive, persistent chat experience with configurable language models. It supports cloud-based models (Google Gemini, Anthropic Claude), local models via llama-cpp-python (LLaMA), and locally-served models via Ollama, offering a unified interface for interacting with AI assistants.
 
 ## 🛠️ Setup Instructions
 
@@ -25,6 +25,8 @@ Azor the chatdog is a command-line interface chat application that provides an i
    - Create a `.env` file with your API keys and model settings
    - For Gemini: add `GEMINI_API_KEY` and `MODEL_NAME`
    - For LLaMA: add `LLAMA_MODEL_PATH` and model-specific parameters
+   - For Ollama: add `OLLAMA_MODEL_NAME` and optionally `OLLAMA_HOST`
+   - For Anthropic: add `ANTHROPIC_API_KEY` and optionally `ANTHROPIC_MODEL_NAME`
 
 ## 📂 Architecture Overview
 
@@ -57,7 +59,9 @@ Azor the chatdog is a command-line interface chat application that provides an i
 +-------------------+
 |    LLM Client     |
 | (gemini_client.py  |
-|  or llama_client.py)|
+|  llama_client.py   |
+|  ollama_client.py  |
+|  anthropic_client.py)|
 +-------------------+
           |
           v
