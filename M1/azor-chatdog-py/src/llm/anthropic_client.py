@@ -32,7 +32,10 @@ class AnthropicChatSession:
 
     def __init__(self, anthropic_client: Anthropic, model_name: str,
                  system_instruction: str, max_tokens: int = 4096,
-                 history: Optional[List[Dict]] = None):
+                 history: Optional[List[Dict]] = None,
+                 temperature: Optional[float] = None,
+                 top_p: Optional[float] = None,
+                 top_k: Optional[int] = None):
         """
         Initialize the Anthropic chat session.
 
@@ -42,6 +45,9 @@ class AnthropicChatSession:
             system_instruction: System prompt for the assistant
             max_tokens: Maximum tokens in the response
             history: Previous conversation history in universal dict format
+            temperature: Sampling temperature (0.0–1.0), None = API default
+            top_p: Nucleus sampling threshold (0.0–1.0), None = API default
+            top_k: Top-K sampling (≥ 1), None = API default
         """
         self.anthropic_client = anthropic_client
         self.model_name = model_name
@@ -50,6 +56,9 @@ class AnthropicChatSession:
         self._history = history or []
         self._total_input_tokens = 0
         self._total_output_tokens = 0
+        self.temperature = temperature
+        self.top_p = top_p
+        self.top_k = top_k
 
     def send_message(self, text: str) -> AnthropicResponse:
         """
@@ -71,11 +80,21 @@ class AnthropicChatSession:
         try:
             # Call Anthropic Messages API
             # System prompt is a top-level parameter, NOT inside messages[]
+            # Build sampling kwargs — only include params that are set
+            sampling_kwargs = {}
+            if self.temperature is not None:
+                sampling_kwargs['temperature'] = self.temperature
+            if self.top_p is not None:
+                sampling_kwargs['top_p'] = self.top_p
+            if self.top_k is not None:
+                sampling_kwargs['top_k'] = self.top_k
+
             response = self.anthropic_client.messages.create(
                 model=self.model_name,
                 max_tokens=self.max_tokens,
                 system=self.system_instruction,
                 messages=cast(Iterable, messages),
+                **sampling_kwargs,
             )
 
             # Extract text from the response content blocks
@@ -162,7 +181,10 @@ class AnthropicClient:
     Provides a clean interface compatible with GeminiLLMClient and LlamaClient.
     """
 
-    def __init__(self, model_name: str, api_key: str, max_tokens: int = 4096):
+    def __init__(self, model_name: str, api_key: str, max_tokens: int = 4096,
+                 temperature: Optional[float] = None,
+                 top_p: Optional[float] = None,
+                 top_k: Optional[int] = None):
         """
         Initialize the Anthropic client with explicit parameters.
 
@@ -170,6 +192,9 @@ class AnthropicClient:
             model_name: Model to use (e.g., 'claude-sonnet-4-20250514')
             api_key: Anthropic API key
             max_tokens: Maximum tokens per response (default: 4096)
+            temperature: Sampling temperature (0.0–1.0), None = API default
+            top_p: Nucleus sampling threshold (0.0–1.0), None = API default
+            top_k: Top-K sampling (≥ 1), None = API default
 
         Raises:
             ValueError: If api_key is empty or None
@@ -180,6 +205,9 @@ class AnthropicClient:
         self.model_name = model_name
         self.api_key = api_key
         self.max_tokens = max_tokens
+        self.temperature = temperature
+        self.top_p = top_p
+        self.top_k = top_k
 
         # Initialize the client during construction
         self._client = self._initialize_client()
@@ -216,13 +244,19 @@ class AnthropicClient:
         config = AnthropicConfig(
             model_name=os.getenv('ANTHROPIC_MODEL_NAME', 'claude-haiku-4-5-20251001'),
             anthropic_api_key=os.getenv('ANTHROPIC_API_KEY', ''),
-            max_tokens=int(os.getenv('ANTHROPIC_MAX_TOKENS', '4096'))
+            max_tokens=int(os.getenv('ANTHROPIC_MAX_TOKENS', '4096')),
+            temperature=float(os.getenv('ANTHROPIC_TEMPERATURE')) if os.getenv('ANTHROPIC_TEMPERATURE') else None,
+            top_p=float(os.getenv('ANTHROPIC_TOP_P')) if os.getenv('ANTHROPIC_TOP_P') else None,
+            top_k=int(os.getenv('ANTHROPIC_TOP_K')) if os.getenv('ANTHROPIC_TOP_K') else None,
         )
 
         return cls(
             model_name=config.model_name,
             api_key=config.anthropic_api_key,
-            max_tokens=config.max_tokens
+            max_tokens=config.max_tokens,
+            temperature=config.temperature,
+            top_p=config.top_p,
+            top_k=config.top_k,
         )
 
     def _initialize_client(self) -> Anthropic:
@@ -264,7 +298,10 @@ class AnthropicClient:
             model_name=self.model_name,
             system_instruction=system_instruction,
             max_tokens=self.max_tokens,
-            history=history or []
+            history=history or [],
+            temperature=self.temperature,
+            top_p=self.top_p,
+            top_k=self.top_k,
         )
 
     def count_history_tokens(self, history: List[Dict]) -> int:
@@ -342,7 +379,17 @@ class AnthropicClient:
         else:
             masked_key = f"{self.api_key[:4]}...{self.api_key[-4:]}"
 
-        return f"✅ Klient Anthropic gotowy do użycia (Model: {self.model_name}, Key: {masked_key})"
+        # Build sampling params display
+        sampling_parts = []
+        if self.temperature is not None:
+            sampling_parts.append(f"T={self.temperature}")
+        if self.top_p is not None:
+            sampling_parts.append(f"TopP={self.top_p}")
+        if self.top_k is not None:
+            sampling_parts.append(f"TopK={self.top_k}")
+        sampling_info = f", {', '.join(sampling_parts)}" if sampling_parts else ""
+
+        return f"✅ Klient Anthropic gotowy do użycia (Model: {self.model_name}, Key: {masked_key}{sampling_info})"
 
     @property
     def client(self):

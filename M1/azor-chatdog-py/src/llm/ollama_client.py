@@ -29,7 +29,10 @@ class OllamaChatSession:
     """
 
     def __init__(self, ollama_client: OllamaSDKClient, model_name: str,
-                 system_instruction: str, history: Optional[List[Dict]] = None):
+                 system_instruction: str, history: Optional[List[Dict]] = None,
+                 temperature: Optional[float] = None,
+                 top_p: Optional[float] = None,
+                 top_k: Optional[int] = None):
         """
         Initialize the Ollama chat session.
 
@@ -38,11 +41,17 @@ class OllamaChatSession:
             model_name: Name of the model to use (e.g., 'llama3.1', 'mistral')
             system_instruction: System prompt for the assistant
             history: Previous conversation history in universal dict format
+            temperature: Sampling temperature, None = model default
+            top_p: Nucleus sampling threshold, None = model default
+            top_k: Top-K sampling, None = model default
         """
         self.ollama_client = ollama_client
         self.model_name = model_name
         self.system_instruction = system_instruction
         self._history = history or []
+        self.temperature = temperature
+        self.top_p = top_p
+        self.top_k = top_k
 
     def send_message(self, text: str) -> OllamaResponse:
         """
@@ -62,12 +71,25 @@ class OllamaChatSession:
         messages = self._build_messages_from_history()
 
         try:
+            # Build sampling options — only include params that are set
+            options = {}
+            if self.temperature is not None:
+                options['temperature'] = self.temperature
+            if self.top_p is not None:
+                options['top_p'] = self.top_p
+            if self.top_k is not None:
+                options['top_k'] = self.top_k
+
             # Call Ollama chat API (non-streaming for compatibility)
-            response = self.ollama_client.chat(
-                model=self.model_name,
-                messages=messages,
-                stream=False,
-            )
+            chat_kwargs = {
+                'model': self.model_name,
+                'messages': messages,
+                'stream': False,
+            }
+            if options:
+                chat_kwargs['options'] = options
+
+            response = self.ollama_client.chat(**chat_kwargs)
 
             response_text = response['message']['content'].strip()
 
@@ -141,13 +163,19 @@ class OllamaClient:
     Communicates with a locally running Ollama server over HTTP.
     """
 
-    def __init__(self, model_name: str, host: str = "http://localhost:11434"):
+    def __init__(self, model_name: str, host: str = "http://localhost:11434",
+                 temperature: Optional[float] = None,
+                 top_p: Optional[float] = None,
+                 top_k: Optional[int] = None):
         """
         Initialize the Ollama client with explicit parameters.
 
         Args:
             model_name: Name of the Ollama model to use (e.g., 'llama3.1', 'mistral')
             host: URL of the Ollama server (default: http://localhost:11434)
+            temperature: Sampling temperature (0.0–2.0), None = model default
+            top_p: Nucleus sampling threshold (0.0–1.0), None = model default
+            top_k: Top-K sampling (≥ 1), None = model default
 
         Raises:
             ValueError: If model_name is empty
@@ -157,6 +185,9 @@ class OllamaClient:
 
         self.model_name = model_name
         self.host = host
+        self.temperature = temperature
+        self.top_p = top_p
+        self.top_k = top_k
 
         # Initialize the Ollama SDK client during construction
         self._client = self._initialize_client()
@@ -191,14 +222,20 @@ class OllamaClient:
         # Validate with Pydantic
         config = OllamaConfig(
             model_name=os.getenv('OLLAMA_MODEL_NAME', 'qwen2.5:7b-instruct'),
-            ollama_host=os.getenv('OLLAMA_HOST', 'http://localhost:11434')
+            ollama_host=os.getenv('OLLAMA_HOST', 'http://localhost:11434'),
+            temperature=float(os.getenv('OLLAMA_TEMPERATURE')) if os.getenv('OLLAMA_TEMPERATURE') else None,
+            top_p=float(os.getenv('OLLAMA_TOP_P')) if os.getenv('OLLAMA_TOP_P') else None,
+            top_k=int(os.getenv('OLLAMA_TOP_K')) if os.getenv('OLLAMA_TOP_K') else None,
         )
 
         console.print_info(f"Łączenie z serwerem Ollama: {config.ollama_host}")
 
         return cls(
             model_name=config.model_name,
-            host=config.ollama_host
+            host=config.ollama_host,
+            temperature=config.temperature,
+            top_p=config.top_p,
+            top_k=config.top_k,
         )
 
     def _initialize_client(self) -> OllamaSDKClient:
@@ -240,7 +277,10 @@ class OllamaClient:
             ollama_client=self._client,
             model_name=self.model_name,
             system_instruction=system_instruction,
-            history=history or []
+            history=history or [],
+            temperature=self.temperature,
+            top_p=self.top_p,
+            top_k=self.top_k,
         )
 
     def count_history_tokens(self, history: List[Dict]) -> int:
@@ -306,7 +346,17 @@ class OllamaClient:
         Returns:
             Formatted message string for display
         """
-        return f"✅ Klient Ollama gotowy do użycia (Model: {self.model_name}, Host: {self.host})"
+        # Build sampling params display
+        sampling_parts = []
+        if self.temperature is not None:
+            sampling_parts.append(f"T={self.temperature}")
+        if self.top_p is not None:
+            sampling_parts.append(f"TopP={self.top_p}")
+        if self.top_k is not None:
+            sampling_parts.append(f"TopK={self.top_k}")
+        sampling_info = f", {', '.join(sampling_parts)}" if sampling_parts else ""
+
+        return f"✅ Klient Ollama gotowy do użycia (Model: {self.model_name}, Host: {self.host}{sampling_info})"
 
     @property
     def client(self):

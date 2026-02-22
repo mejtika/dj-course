@@ -73,14 +73,20 @@ class GeminiLLMClient:
     Provides a clean interface for chat sessions, token counting, and configuration.
     """
     
-    def __init__(self, model_name: str, api_key: str):
+    def __init__(self, model_name: str, api_key: str,
+                 temperature: Optional[float] = None,
+                 top_p: Optional[float] = None,
+                 top_k: Optional[int] = None):
         """
         Initialize the Gemini LLM client with explicit parameters.
         
         Args:
             model_name: Model to use (e.g., 'gemini-2.5-flash')
             api_key: Google Gemini API key
-        
+            temperature: Sampling temperature (0.0–2.0), None = API default
+            top_p: Nucleus sampling threshold (0.0–1.0), None = API default
+            top_k: Top-K sampling (≥ 1), None = API default
+
         Raises:
             ValueError: If api_key is empty or None
         """
@@ -89,7 +95,10 @@ class GeminiLLMClient:
         
         self.model_name = model_name
         self.api_key = api_key
-        
+        self.temperature = temperature
+        self.top_p = top_p
+        self.top_k = top_k
+
         # Initialize the client during construction
         self._client = self._initialize_client()
     
@@ -119,11 +128,20 @@ class GeminiLLMClient:
         # Walidacja z Pydantic
         config = GeminiConfig(
             model_name=os.getenv('MODEL_NAME', 'gemini-2.5-flash'),
-            gemini_api_key=os.getenv('GEMINI_API_KEY', '')
+            gemini_api_key=os.getenv('GEMINI_API_KEY', ''),
+            temperature=float(os.getenv('GEMINI_TEMPERATURE')) if os.getenv('GEMINI_TEMPERATURE') else None,
+            top_p=float(os.getenv('GEMINI_TOP_P')) if os.getenv('GEMINI_TOP_P') else None,
+            top_k=int(os.getenv('GEMINI_TOP_K')) if os.getenv('GEMINI_TOP_K') else None,
         )
         
-        return cls(model_name=config.model_name, api_key=config.gemini_api_key)
-    
+        return cls(
+            model_name=config.model_name,
+            api_key=config.gemini_api_key,
+            temperature=config.temperature,
+            top_p=config.top_p,
+            top_k=config.top_k,
+        )
+
     def _initialize_client(self) -> genai.Client:
         """
         Initializes the Google GenAI client.
@@ -176,6 +194,9 @@ class GeminiLLMClient:
             history=gemini_history,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
+                temperature=self.temperature,
+                top_p=self.top_p,
+                top_k=self.top_k,
                 thinking_config=types.ThinkingConfig(thinking_budget=thinking_budget)
             )
         )
@@ -243,8 +264,18 @@ class GeminiLLMClient:
         else:
             masked_key = f"{self.api_key[:4]}...{self.api_key[-4:]}"
         
-        return f"✅ Klient Gemini gotowy do użycia (Model: {self.model_name}, Key: {masked_key})"
-    
+        # Build sampling params display
+        sampling_parts = []
+        if self.temperature is not None:
+            sampling_parts.append(f"T={self.temperature}")
+        if self.top_p is not None:
+            sampling_parts.append(f"TopP={self.top_p}")
+        if self.top_k is not None:
+            sampling_parts.append(f"TopK={self.top_k}")
+        sampling_info = f", {', '.join(sampling_parts)}" if sampling_parts else ""
+
+        return f"✅ Klient Gemini gotowy do użycia (Model: {self.model_name}, Key: {masked_key}{sampling_info})"
+
     @property
     def client(self):
         """
